@@ -4,3 +4,6 @@
 /* Narrow-screen resilience */
 @media(max-width:780px){.hero{overflow:hidden}.contact-grid{grid-template-columns:minmax(0,1fr)}.contact-grid>*{min-width:0}.brief-form{min-width:0}.brief-form select,.brief-form textarea{min-width:0;width:100%}}
 @media(max-width:380px){.contact h2{font-size:54px}.brief-form{padding:20px}.form-heading{font-size:20px}.hero-art{margin-left:-45px}}
+
+/* Public contact: direct Telegram profile, no collection or server-side handling. */
+.contact-links{display:flex;align-items:flex-start;flex-direction:column;gap:15px;margin-top:24px}.telegram-contact{display:inline-flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#17231c;color:#f4f7e7;border-radius:60px;padding:16px 20px;font-size:13px;font-weight:750;transition:background .2s,transform .2s}.telegram-contact strong{font-weight:650;color:#d4ed77}.telegram-contact:hover{background:#324734;transform:translateY(-2px)}.github-contact{margin-top:0}.footer-inner>a:last-child:hover{text-decoration:underline}
