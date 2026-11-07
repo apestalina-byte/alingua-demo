@@ -1,0 +1,11 @@
+/* Demo-only presentation, keeping the original visual system. */
+.demo-banner{padding:9px 18px;text-align:center;background:#3e2d2e;color:#fffaf3;font-family:'DM Sans',system-ui,sans-serif;font-size:12px;line-height:1.5;letter-spacing:.005em}
+.demo-banner a{color:#f6db8f;text-decoration:underline;text-underline-offset:3px;font-weight:700}
+.demo-form-note{background:#fff1cc;border:1px solid #edd799;border-radius:14px;padding:13px 16px;line-height:1.6;margin:12px 0;color:#57432c;font-size:13px}
+.demo-about h1{max-width:940px;font-size:clamp(32px,5vw,60px);font-family:'Playfair Display',serif;line-height:1.1;margin:20px 0}
+.demo-about .lead{max-width:860px;line-height:1.8}
+.demo-about-section{max-width:1000px;margin:60px auto 30px}
+.demo-about-section h2{font-size:clamp(24px,3vw,34px);margin:34px 0 12px}
+.demo-about-section p{color:#665b60;line-height:1.8}
+.demo-about .strength-grid{margin-top:42px}
+@media(max-width:650px){.demo-banner{font-size:11px}.demo-about-section{margin-top:32px}}
