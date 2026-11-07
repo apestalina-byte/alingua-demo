@@ -17,11 +17,13 @@
     const plan=document.getElementById('brief-plan').value;
     const message=document.getElementById('brief-message').value.trim()||'Хочу обсудить сайт и узнать стоимость.';
     const contents=`Здравствуйте! Хочу заказать сайт.\nФормат: ${plan}.\nЗадача: ${message}\nПодскажите, пожалуйста, стоимость и сроки.`;
+    // The visitor must paste and send the message themselves; nothing is sent by the website.
+    window.open('https://t.me/artem10p','_blank','noopener,noreferrer');
     try {
       await navigator.clipboard.writeText(contents);
-      status.textContent='Готово! Текст скопирован. Отправьте его разработчику удобным способом.';
+      status.textContent='Текст скопирован. Вставьте его в чат @artem10p в Telegram и отправьте сообщение.';
     } catch(err) {
-      const input=document.createElement('textarea');input.value=contents;input.readOnly=true;input.style.position='fixed';input.style.top='-9999px';document.body.appendChild(input);input.select();const ok=document.execCommand('copy');input.remove();status.textContent=ok?'Текст скопирован. Отправьте его разработчику удобным способом.':'Автокопирование недоступно. Выделите текст в поле и скопируйте его.';
+      const input=document.createElement('textarea');input.value=contents;input.readOnly=true;input.style.position='fixed';input.style.top='-9999px';document.body.appendChild(input);input.select();const ok=document.execCommand('copy');input.remove();status.textContent=ok?'Текст скопирован. Вставьте его в чат @artem10p в Telegram и отправьте сообщение.':'Не удалось скопировать текст автоматически. Откройте @artem10p и отправьте описание задачи вручную.';
     }
   });
 })();
