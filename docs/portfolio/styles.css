@@ -7,3 +7,25 @@
 
 /* Public contact: direct Telegram profile, no collection or server-side handling. */
 .contact-links{display:flex;align-items:flex-start;flex-direction:column;gap:15px;margin-top:24px}.telegram-contact{display:inline-flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#17231c;color:#f4f7e7;border-radius:60px;padding:16px 20px;font-size:13px;font-weight:750;transition:background .2s,transform .2s}.telegram-contact strong{font-weight:650;color:#d4ed77}.telegram-contact:hover{background:#324734;transform:translateY(-2px)}.github-contact{margin-top:0}.footer-inner>a:last-child:hover{text-decoration:underline}
+
+/* AP Web 2026 price-list update */
+.price-grid{align-items:stretch}
+.price-card{min-height:620px;padding:24px 20px}
+.price-card h3{font-size:clamp(21px,1.85vw,25px);margin:30px 0 8px;line-height:1.12;text-wrap:balance}
+.price-card .price-value{font-size:clamp(27px,2.5vw,33px);margin-bottom:12px;letter-spacing:-.05em}
+.price-duration{display:inline-flex;gap:5px;align-self:flex-start;flex-wrap:wrap;background:#ffffff99;border:1px solid #aab79a70;border-radius:25px;padding:7px 10px;font-size:10.5px;color:#3b493e}
+.price-duration strong{font-weight:800}
+.price-card>p{min-height:96px;margin:15px 0 0}
+.price-card ul{margin:12px 0 25px}
+.price-card li{font-size:11px;padding:9px 0 9px 18px;line-height:1.45}
+.price-includes{margin-top:29px;padding:24px 27px;border:1px solid #d4dec6;border-radius:13px;background:#eef4e3}
+.price-includes h3{margin:0 0 18px;font-size:22px;letter-spacing:-.04em}
+.price-includes-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.price-includes-list span{font-size:11.5px;line-height:1.55;padding:0 0 0 22px;position:relative}
+.price-includes-list span:before{content:"✓";font-size:14px;position:absolute;left:0;top:0;color:#37603b;font-weight:900}
+.price-note{max-width:100%;font-size:12px;line-height:1.7}
+.price-budget{font-size:14px;font-weight:650;margin:17px 0 0;color:#294d31}
+.price-budget a{text-decoration:underline;text-underline-offset:4px}
+@media(max-width:1080px){.price-card{min-height:0}.price-includes-list{grid-template-columns:repeat(3,minmax(0,1fr))}.price-card>p{min-height:65px}}
+@media(max-width:760px){.price-includes{padding:20px}.price-includes-list{grid-template-columns:repeat(2,minmax(0,1fr))}.price-card{padding:24px}.price-card .price-value{font-size:32px}.price-card>p{min-height:0}.price-card li{font-size:12px}}
+@media(max-width:400px){.price-includes-list{grid-template-columns:1fr}.price-card h3{font-size:24px}}
