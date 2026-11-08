@@ -42,6 +42,12 @@ def process_message(message: dict, client: httpx.Client):
         return
     content=(message.get("text") or "").strip()
     command=(content.split(maxsplit=1)[0].split("@")[0].lower() if content else "")
+    if command=="/id":
+        send(client,chat_id,"Твой Telegram ID: "+str(user_id)+
+             "\nВпиши это число в STUDYBOARD_TELEGRAM_USER_ID на сервере, затем перезапусти контейнеры.")
+        return
+    if not core.is_allowed_telegram_user(user_id):
+        return
     if command not in ("/start","/help","/connect","/today","/week","/overdue","/progress","/mute","/unmute"):
         if content.startswith("/"):
             send(client,chat_id,"Неизвестная команда. Используй /help.")
@@ -95,6 +101,8 @@ def process_callback(query: dict, client: httpx.Client):
     user_id=sender.get("id")
     data=query.get("data","")
     if chat.get("type")!="private" or not isinstance(user_id,int):
+        return
+    if not core.is_allowed_telegram_user(user_id):
         return
     if not (data.startswith("done:") and len(data)<=64):
         call("answerCallbackQuery",{"callback_query_id":callback_id,"text":"Неизвестное действие"},client)
