@@ -301,3 +301,25 @@ body[data-theme="dark"] ::selection{background:#3f528c;color:white}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important;transform:none!important}
 }
+
+
+/* Cloud sync uses the same quiet visual language as the rest of StudyBoard. */
+.sync-indicator{margin-left:auto;display:inline-flex;align-items:center;color:#94a3ba;font-size:10px;white-space:nowrap}
+.sync-description{font-size:12px;color:var(--muted-dark);line-height:1.7;margin:2px 0 19px}
+.sync-state{display:flex;align-items:center;gap:12px;background:var(--panel-soft);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px}
+.sync-state>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sync-state strong{font-size:12px;font-weight:720}
+.sync-state small{font-size:11px;color:var(--muted-dark);line-height:1.5;overflow-wrap:anywhere}
+.sync-status-dot{height:9px;width:9px;border-radius:50%;background:#9da8b9;flex-shrink:0}
+.sync-status-dot[data-state=online]{background:#38a080;box-shadow:0 0 0 3px rgba(56,160,128,.12)}
+.sync-status-dot[data-state=error]{background:#d46c78}
+.sync-status-dot[data-state=pending]{background:#d49d52}
+.sync-connected-url{font-size:11px;color:var(--muted-dark);word-break:break-all;margin:0 0 14px}
+.sync-actions{display:flex;flex-wrap:wrap;gap:9px}
+.sync-actions .btn{flex:1;font-size:11px;white-space:normal}
+.sync-backup-actions{display:flex;flex-wrap:wrap;gap:20px;margin-top:23px;padding-top:18px;border-top:1px solid var(--border)}
+.sync-backup-actions .text-action{font-size:11px}
+.sync-warning{font-size:10px;line-height:1.65;color:var(--muted);margin:19px 0 0}
+[hidden]{display:none!important}
+body[data-theme=dark] .sync-status-dot[data-state=online]{background:#7ad4ad}
+@media(max-width:430px){.sync-actions{flex-direction:column}.sync-actions .btn{width:100%}.sync-backup-actions{gap:12px}}
