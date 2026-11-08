@@ -16,6 +16,18 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
 @media(max-width:430px){.topbar{padding:0 12px}.breadcrumb>span{display:none}.breadcrumb>.icon{display:none}.breadcrumb strong{font-size:12px}.main-content{padding-left:12px;padding-right:12px}.stats-grid{gap:9px}.stat-card{padding:13px}.stat-label{font-size:10px}.stat-icon{width:28px;height:28px}.stat-icon .icon{width:15px;height:15px}.stat-number{font-size:27px;margin-top:13px}.stat-detail{font-size:9px}.subject-cards{grid-template-columns:1fr 1fr}.progress-subjects{grid-template-columns:1fr}.calendar-day{min-height:59px;padding:4px}.calendar-dots{gap:2px}.calendar-dots>span{width:5px;height:5px}.calendar-more{font-size:8px}.calendar-weekdays div{font-size:10px}.form-grid{gap:10px}.field input,.field select,.field textarea{padding:11px 9px}.dialog-actions{gap:8px}.dialog-actions .btn{padding:10px 12px}.task-card-note{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+  
+/* Bulk generation of individually editable, numbered assignments */
+.series-intro{margin:-9px 0 15px;color:var(--muted-dark);font-size:12px;line-height:1.65}
+.series-presets{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:15px}
+.series-presets>span{font-size:11px;color:var(--muted-dark);font-weight:750;margin-right:2px}
+.series-presets .btn{padding:8px 11px;font-size:11px}
+.series-help{display:block;margin-top:7px;color:var(--muted-dark);font-size:11px;line-height:1.55}
+.series-preview{margin-top:20px;padding:14px 16px;background:var(--accent-soft);border:1px solid var(--border);border-radius:11px;color:var(--text);font-size:12px;line-height:1.6}
+.series-preview strong{font-weight:800}
+@media(max-width:760px){.page-heading-actions{gap:7px;flex-wrap:wrap;justify-content:flex-end}.page-heading-actions .btn{padding:9px 11px;font-size:11px}}
+@media(max-width:430px){.page-heading{align-items:flex-start;flex-direction:column}.page-heading-actions{width:100%;justify-content:flex-start}.page-heading-actions .btn{flex:1;min-width:0}.series-presets{gap:6px}}
+
   </style>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
@@ -107,6 +119,31 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       <label class="field"><span>Описание / что нужно сделать</span><textarea id="taskNotes" rows="3" maxlength="4000" placeholder="Требования преподавателя, этапы работы, полезные заметки..."></textarea></label>
       <label class="field"><span>Ссылка на задание (необязательно)</span><input id="taskLink" type="url" placeholder="https://..." maxlength="1000" /></label>
       <div class="dialog-actions"><button type="button" class="btn btn-muted" data-action="close-task">Отмена</button><button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-check"></use></svg>Сохранить задание</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="seriesDialog" class="modal-dialog" aria-labelledby="seriesDialogTitle">
+    <form id="seriesForm" class="modal-form">
+      <div class="dialog-head"><div><span class="eyebrow">БЫСТРОЕ ДОБАВЛЕНИЕ</span><h2 id="seriesDialogTitle">Серия заданий</h2></div><button class="icon-btn" type="button" data-action="close-series" aria-label="Закрыть"><svg class="icon"><use href="#i-x"></use></svg></button></div>
+      <p class="series-intro">Создай сразу несколько пронумерованных заданий. У каждого будет собственный статус, заметки и дедлайн, который можно изменить позже.</p>
+      <div class="form-grid">
+        <label class="field"><span>Предмет <em>*</em></span><select id="seriesSubject" required></select></label>
+        <label class="field"><span>Тип работы</span><select id="seriesType"><option value="lab">Лабораторная</option><option value="homework">Домашнее задание</option><option value="test">Контрольная / тест</option><option value="project">Проект</option><option value="other">Другое / посещение</option></select></label>
+      </div>
+      <div class="series-presets"><span>Шаблоны:</span><button type="button" class="btn btn-outline" data-action="series-preset" data-template="ЛР №{n}" data-type="lab">Лабораторные</button><button type="button" class="btn btn-outline" data-action="series-preset" data-template="Посещение №{n}" data-type="other">Посещения</button></div>
+      <label class="field"><span>Шаблон названия <em>*</em></span><input id="seriesTemplate" maxlength="170" value="ЛР №{n}" placeholder="Например, ЛР №{n}" autocomplete="off" required /><small class="series-help">Вместо {n} подставится номер: «ЛР №1», «ЛР №2» и т. д.</small></label>
+      <div class="form-grid">
+        <label class="field"><span>Начиная с № <em>*</em></span><input id="seriesStart" type="number" value="1" min="1" max="9999" step="1" required /></label>
+        <label class="field"><span>Заканчивая № <em>*</em></span><input id="seriesEnd" type="number" value="16" min="1" max="9999" step="1" required /></label>
+      </div>
+      <div class="form-grid">
+        <label class="field"><span>Общий дедлайн (необязательно)</span><input id="seriesDue" type="date" /></label>
+        <label class="field"><span>Приоритет</span><select id="seriesPriority"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option></select></label>
+      </div>
+      <label class="field"><span>Общие заметки (необязательно)</span><textarea id="seriesNotes" rows="2" maxlength="4000" placeholder="Можно оставить пустым и заполнить каждую задачу отдельно"></textarea></label>
+      <div id="seriesPreview" class="series-preview" role="status" aria-live="polite"></div>
+      <div class="dialog-actions"><button type="button" class="btn btn-muted" data-action="close-series">Отмена</button><button type="submit" class="btn btn-primary" id="seriesSubmit">Создать задания</button></div>
     </form>
   </dialog>
 
@@ -271,7 +308,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     return tasks;
   }
   function renderTasksList(){const tasks=filteredTasks();const r=$('tasksResults');if(!r)return;r.innerHTML=`<div class="results-summary"><span>Найдено заданий: <strong>${tasks.length}</strong></span><span>${data.tasks.filter(t=>t.status!=='done').length} ещё не выполнено</span></div>${tasks.length?`<div class="tasks-list">${tasks.map(renderTaskCard).join('')}</div>`:`<div class="panel">${emptyState('search','Заданий не найдено','Попробуй изменить фильтр или добавь новое задание.',true)}</div>`}`;}
-  function renderTasks(){const heading=ui.subject==='all'?'Все задания':getSubjectName(ui.subject);return `<div class="page-heading"><div><span class="eyebrow">ПЛАНИРОВАНИЕ</span><h1>${escapeHTML(heading)}</h1><p>Добавляй задания, следи за сроками и отмечай готовность.</p></div><button type="button" class="btn btn-primary" data-action="new-task">${icon('plus')} <span>Добавить</span></button></div>
+  function renderTasks(){const heading=ui.subject==='all'?'Все задания':getSubjectName(ui.subject);return `<div class="page-heading"><div><span class="eyebrow">ПЛАНИРОВАНИЕ</span><h1>${escapeHTML(heading)}</h1><p>Добавляй задания, следи за сроками и отмечай готовность.</p></div><div class="page-heading-actions"><button type="button" class="btn btn-outline" data-action="new-series">${icon('list')} <span>Серия заданий</span></button><button type="button" class="btn btn-primary" data-action="new-task">${icon('plus')} <span>Добавить</span></button></div></div>
     <section class="task-toolbar"><div class="toolbar-top"><label class="search-wrap" aria-label="Поиск заданий">${icon('search')}<input type="search" id="taskSearch" placeholder="Поиск по заданиям и заметкам..." value="${escapeHTML(ui.search)}" /></label><select class="toolbar-select" id="subjectFilter" aria-label="Фильтр по предмету"><option value="all">Все предметы</option>${data.subjects.map(s=>`<option value="${escapeHTML(s.id)}" ${ui.subject===s.id?'selected':''}>${escapeHTML(s.name)}</option>`).join('')}</select><select class="toolbar-select" id="sortFilter" aria-label="Сортировка"><option value="due" ${ui.sort==='due'?'selected':''}>По дедлайну</option><option value="new" ${ui.sort==='new'?'selected':''}>Сначала новые</option><option value="priority" ${ui.sort==='priority'?'selected':''}>По приоритету</option></select></div><div class="filters-row">${[['all','Все'],['todo','Не начато'],['progress','В работе'],['soon','Ближайшие 7 дней'],['overdue','Просроченные'],['done','Выполнено']].map(([key,label])=>`<button type="button" class="filter-chip ${ui.filter===key?'active':''}" data-action="filter" data-filter="${key}">${label}</button>`).join('')}</div></section><section id="tasksResults" aria-label="Список заданий"></section>`;}
   function dateWeekday(date){return new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(dateAtLocalMidnight(date));}
   function renderCalendar(){const m=ui.calendarMonth,year=m.getFullYear(),month=m.getMonth(),first=(new Date(year,month,1).getDay()+6)%7,last=new Date(year,month+1,0).getDate(),cells=Math.ceil((first+last)/7)*7,start=new Date(year,month,1-first);
@@ -297,6 +334,79 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     closeMenu();render();window.scrollTo({top:0,behavior:'instant'});
   }
   function subjectOptions(){return data.subjects.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join('')}
+  function planSeries(template,start,end,existingTitles) {
+  template=String(template||'').trim();
+  start=Number(start);end=Number(end);
+  if(!template || !template.includes('{n}'))throw new Error('Добавь {n} в шаблон названия.');
+  if(!Number.isInteger(start)||!Number.isInteger(end)||start<1||end<start||end>9999||end-start+1>100)throw new Error('Укажи диапазон от 1 до 9999, максимум 100 задач за раз.');
+  const normalized=x=>String(x).trim().replace(/\s+/g,' ').toLocaleLowerCase('ru-RU');
+  const seen=new Set(existingTitles.map(normalized));
+  const titles=[],duplicates=[];
+  for(let i=start;i<=end;i++){
+    const title=template.replaceAll('{n}',String(i)).trim();
+    if(!title||title.length>180)throw new Error('Название слишком длинное (максимум 180 символов).');
+    const key=normalized(title);
+    if(seen.has(key)){duplicates.push(title);continue;}
+    titles.push(title);
+    seen.add(key);
+  }
+  return {titles,duplicates,first:template.replaceAll('{n}',String(start)).trim(),last:template.replaceAll('{n}',String(end)).trim(),count:end-start+1};
+}
+  function openSeriesDialog(){
+  if(!data.subjects.length){showToast('Сначала добавь хотя бы один предмет.');openSubjectDialog();return;}
+  $('seriesForm').reset();
+  $('seriesSubject').innerHTML=subjectOptions();
+  const subjectId=ui.subject!=='all'&&getSubject(ui.subject)?ui.subject:data.subjects[0].id;
+  $('seriesSubject').value=subjectId;
+  if(getSubjectName(subjectId).toLocaleLowerCase('ru-RU').includes('физкульт')){
+    $('seriesTemplate').value='Посещение №{n}';
+    $('seriesType').value='other';
+    $('seriesEnd').value='16';
+  } else {
+    $('seriesTemplate').value='ЛР №{n}';
+    $('seriesType').value='lab';
+    $('seriesEnd').value='6';
+  }
+  updateSeriesPreview();
+  $('seriesDialog').showModal();
+  $('seriesTemplate').focus();
+}
+  function updateSeriesPreview(){
+  const subjectId=$('seriesSubject').value;
+  const titles=data.tasks.filter(t=>t.subjectId===subjectId).map(t=>t.title);
+  const preview=$('seriesPreview');
+  try{
+    const plan=planSeries($('seriesTemplate').value,$('seriesStart').value,$('seriesEnd').value,titles);
+    const extra=plan.duplicates.length?' Уже существуют — '+plan.duplicates.length+' (будут пропущены).':'';
+    preview.textContent='Пример: '+plan.first+' … '+plan.last+'. Будет создано: '+plan.titles.length+' из '+plan.count+'.'+extra;
+    $('seriesSubmit').disabled=!plan.titles.length;
+  }catch(err){
+    preview.textContent=err.message;
+    $('seriesSubmit').disabled=true;
+  }
+}
+  function saveSeries(event){
+  event.preventDefault();
+  const subjectId=$('seriesSubject').value;
+  if(!getSubject(subjectId)){showToast('Выбери предмет.');return;}
+  const due=$('seriesDue').value;
+  if(due&&!validISO(due)){showToast('Некорректная дата.');return;}
+  let plan;
+  try{plan=planSeries($('seriesTemplate').value,$('seriesStart').value,$('seriesEnd').value,data.tasks.filter(t=>t.subjectId===subjectId).map(t=>t.title));}
+  catch(err){showToast(err.message);return;}
+  if(!plan.titles.length){showToast('Все задания из серии уже существуют.');return;}
+  const type=$('seriesType').value;
+  const priority=$('seriesPriority').value;
+  const notes=$('seriesNotes').value.trim();
+  const now=new Date().toISOString();
+  const newTasks=plan.titles.map(title=>({id:makeId(),title,subjectId,type:TYPE_LABELS[type]?type:'other',due,time:'',priority:PRIORITY_LABELS[priority]?priority:'normal',status:'todo',notes,link:'',createdAt:now,completedAt:''}));
+  const prevTasks=data.tasks;
+  data.tasks=[...data.tasks,...newTasks];
+  if(!save()){data.tasks=prevTasks;return;}
+  $('seriesDialog').close();
+  navigate('tasks',subjectId);
+  showToast('Добавлено '+newTasks.length+' заданий'+(plan.duplicates.length?' · пропущено повторов: '+plan.duplicates.length:''));
+}
   function openTaskDialog(id='',presetDate=''){
     if(!data.subjects.length){showToast('Сначала добавь хотя бы один предмет.');openSubjectDialog();return}
     const t=data.tasks.find(t=>t.id===id);
@@ -385,6 +495,9 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       case 'open-menu':$('sidebar').classList.add('open');$('mobileBackdrop').classList.add('visible');break;
       case 'close-menu':closeMenu();break;
       case 'new-task':openTaskDialog();break;
+      case 'new-series':openSeriesDialog();break;
+      case 'close-series':$('seriesDialog').close();break;
+      case 'series-preset':$('seriesTemplate').value=btn.dataset.template;$('seriesType').value=btn.dataset.type;updateSeriesPreview();break;
       case 'add-task-day':openTaskDialog('',date);break;
       case 'close-task':$('taskDialog').close();break;
       case 'edit-task':openTaskDialog(id);break;
@@ -414,6 +527,9 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     render();
     document.addEventListener('click',onClick);
     $('taskForm').addEventListener('submit',saveTask);
+    $('seriesForm').addEventListener('submit',saveSeries);
+    $('seriesForm').addEventListener('input',updateSeriesPreview);
+    $('seriesForm').addEventListener('change',updateSeriesPreview);
     $('subjectForm').addEventListener('submit',saveSubject);
     $('mobileBackdrop').addEventListener('click',closeMenu);
     $('brandHome').addEventListener('click',event=>{event.preventDefault();navigate('overview')});
