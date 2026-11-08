@@ -1,5 +1,5 @@
-const CACHE = 'studyboard-app-v2';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './design.css?v=2'];
+const CACHE = 'studyboard-app-v3';
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './design.css?v=2', './sync.js?v=1'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
