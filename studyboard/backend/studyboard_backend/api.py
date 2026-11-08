@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from . import core
@@ -29,8 +30,12 @@ attempts = defaultdict(deque)
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    if request.method in ("PUT","POST") and int(request.headers.get("content-length","0")) > 2_500_000:
-        raise HTTPException(413,"Request too large")
+    length=request.headers.get("content-length","0")
+    if request.method in ("PUT","POST"):
+        if not length.isdigit():
+            return JSONResponse({"detail":"Invalid Content-Length"},status_code=400)
+        if int(length)>2_500_000:
+            return JSONResponse({"detail":"Request too large"},status_code=413)
     response = await call_next(request)
     response.headers["Cache-Control"]="no-store"
     response.headers["X-Content-Type-Options"]="nosniff"
