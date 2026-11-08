@@ -203,8 +203,16 @@ function create({getData,setData,normalize,showToast,downloadFile,today}){
     }catch{showToast('Отключено локально. Для отзыва серверного ключа потребуется доступ к серверу.')}
   }
   function downloadRecovery(){
-    const backup=localStorage.getItem(RECOVERY_KEY);
-    if(backup)downloadFile('studyboard-recovery-'+today()+'.json','application/json;charset=utf-8',backup);
+    const raw=localStorage.getItem(RECOVERY_KEY);
+    if(!raw)return;
+    try{
+      const record=JSON.parse(raw);
+      const local=record.local;
+      if(!local||!Array.isArray(local.subjects)||!Array.isArray(local.tasks))throw Error('Invalid recovery');
+      const exportable=JSON.stringify({version:1,exportedAt:new Date().toISOString(),
+        subjects:local.subjects,tasks:local.tasks},null,2);
+      downloadFile('studyboard-recovery-'+today()+'.json','application/json;charset=utf-8',exportable);
+    }catch{showToast('Не удалось прочитать резервную копию')}
   }
   function init(){
     updateUI(config?'Подключено':'Только это устройство',
