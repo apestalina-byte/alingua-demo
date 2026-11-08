@@ -87,6 +87,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       </div>
       <nav class="subjects-nav" id="subjectsNav" aria-label="Предметы"></nav>
       <div class="sidebar-bottom">
+        <button type="button" class="bottom-link" data-action="sync-dialog"><svg class="icon"><use href="#i-upload"></use></svg> Синхронизация <span class="sync-indicator" id="syncIndicator">Локально</span></button>
         <button type="button" class="bottom-link" data-action="backup"><svg class="icon"><use href="#i-download"></use></svg> Резервная копия</button>
         <div class="sidebar-footnote">StudyBoard · 2.0<br>Данные сохраняются в этом браузере</div>
       </div>
@@ -164,6 +165,31 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     </form>
   </dialog>
 
+  <dialog id="syncDialog" class="modal-dialog modal-small" aria-labelledby="syncDialogTitle">
+    <div class="modal-form">
+      <div class="dialog-head"><div><span class="eyebrow">STUDYBOARD CLOUD</span><h2 id="syncDialogTitle">Синхронизация</h2></div><button class="icon-btn" type="button" data-action="sync-close" aria-label="Закрыть"><svg class="icon"><use href="#i-x"></use></svg></button></div>
+      <p class="sync-description">Задания всегда сохраняются в этом браузере. Подключи сервер и Telegram-бота, чтобы видеть одни и те же данные на разных устройствах и получать отчёты в 08:00.</p>
+      <div class="sync-state"><span class="sync-status-dot" id="syncStatusDot"></span><div><strong id="syncStatusTitle">Только это устройство</strong><small id="syncStatusDetail">Облачная синхронизация не подключена</small></div></div>
+      <form id="syncPairForm">
+        <label class="field"><span>Адрес API-сервера <em>*</em></span><input id="syncServerUrl" type="url" required placeholder="https://study-api.example.com" autocomplete="url" maxlength="200"/></label>
+        <label class="field"><span>Одноразовый код из Telegram <em>*</em></span><input id="syncPairCode" type="text" required placeholder="Отправь боту /connect" autocomplete="off" spellcheck="false" maxlength="80"/></label>
+        <p class="series-help">Сначала отправь боту <strong>/start</strong>, затем <strong>/connect</strong>. Код действует 10 минут. Токен бота сюда вводить не нужно.</p>
+        <div class="dialog-actions"><button type="submit" class="btn btn-primary" id="syncConnectBtn">Подключить и перенести задачи</button></div>
+      </form>
+      <div id="syncConnectedActions" hidden>
+        <p class="sync-connected-url" id="syncConnectedUrl"></p>
+        <div class="sync-actions">
+          <button type="button" class="btn btn-primary" data-action="sync-now" id="syncNowBtn">Синхронизировать сейчас</button>
+          <button type="button" class="btn btn-outline" data-action="sync-disconnect">Отключить устройство</button>
+        </div>
+      </div>
+      <div class="sync-backup-actions">
+        <button type="button" class="text-action" data-action="export-json">Скачать резервную копию</button>
+        <button type="button" class="text-action" data-action="sync-recovery" id="syncRecoveryBtn" hidden>Скачать копию до объединения</button>
+      </div>
+      <p class="sync-warning">Не используй ключ синхронизации на чужом устройстве. При отключении задания останутся в браузере. Автоматические отчёты требуют работающего сервера.</p>
+    </div>
+  </dialog>
   <dialog id="backupDialog" class="modal-dialog modal-small" aria-labelledby="backupDialogTitle">
     <div class="modal-form">
       <div class="dialog-head"><div><span class="eyebrow">МОИ ДАННЫЕ</span><h2 id="backupDialogTitle">Сохранение данных</h2></div><button type="button" class="icon-btn" data-action="close-backup" aria-label="Закрыть"><svg class="icon"><use href="#i-x"></use></svg></button></div>
@@ -181,6 +207,9 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   'use strict';
   const DATA_KEY = 'studyboard.data.v1';
   const THEME_KEY = 'studyboard.theme.v1';
+  const SYNC_CONFIG_KEY = 'studyboard.sync.config.v1';
+  const SYNC_BASE_KEY = 'studyboard.sync.base.v1';
+  const SYNC_RECOVERY_KEY = 'studyboard.sync.recovery.v1';
   const COLORS = ['#7566ed','#4b9ed2','#2cb5a0','#f0ad5d','#ea7784','#ab75d5','#72a468','#d88f5b'];
   const SUBJECT_CATALOG_MIGRATION_KEY = 'studyboard.catalog-10-subjects.2026-11';
   const SUBJECT_CATALOG_BACKUP_KEY = 'studyboard.backup.before-catalog-update.2026-11';
@@ -259,7 +288,8 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       priority:PRIORITY_LABELS[t.priority]?t.priority:'normal',status:STATUS_LABELS[t.status]?t.status:'todo',
       notes:typeof t.notes==='string'?t.notes.slice(0,4000):'',link:safeUrl(t.link),
       createdAt:typeof t.createdAt==='string'?t.createdAt:new Date().toISOString(),
-      completedAt:typeof t.completedAt==='string'?t.completedAt:''
+      completedAt:typeof t.completedAt==='string'?t.completedAt:'',
+      updatedAt:typeof t.updatedAt==='string'?t.updatedAt:''
     })).filter(t=>{if(tids.has(t.id))return false;tids.add(t.id);return true});
     return {subjects,tasks};
   }
@@ -323,7 +353,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   const ui = {view:initialView,subject:'all',filter:'all',sort:'due',search:'',calendarMonth:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:today(),selectedColor:COLORS[0]};
   let toastTimer;
   function showToast(message){const t=$('toast');t.textContent=message;t.classList.add('shown');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('shown'),3500)}
-  function save(){try{localStorage.setItem(DATA_KEY,JSON.stringify({version:1,subjects:data.subjects,tasks:data.tasks}));return true}catch(e){showToast('Не удалось сохранить данные. Проверь свободное место браузера.');return false}}
+  function save(){try{localStorage.setItem(DATA_KEY,JSON.stringify({version:1,subjects:data.subjects,tasks:data.tasks}));queueCloudSync();return true}catch(e){showToast('Не удалось сохранить данные. Проверь свободное место браузера.');return false}}
   function setTheme(theme){document.body.dataset.theme=theme;const b=document.querySelector('.theme-toggle');b.innerHTML=icon(theme==='dark'?'sun':'moon');b.setAttribute('aria-label',theme==='dark'?'Включить светлую тему':'Включить тёмную тему');try{localStorage.setItem(THEME_KEY,theme)}catch{}}
   function renderSidebar(){
     const total=data.tasks.filter(t=>t.status!=='done').length;
@@ -470,7 +500,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   const priority=$('seriesPriority').value;
   const notes=$('seriesNotes').value.trim();
   const now=new Date().toISOString();
-  const newTasks=plan.titles.map(title=>({id:makeId(),title,subjectId,type:TYPE_LABELS[type]?type:'other',due,time:'',priority:PRIORITY_LABELS[priority]?priority:'normal',status:'todo',notes,link:'',createdAt:now,completedAt:''}));
+  const newTasks=plan.titles.map(title=>({id:makeId(),title,subjectId,type:TYPE_LABELS[type]?type:'other',due,time:'',priority:PRIORITY_LABELS[priority]?priority:'normal',status:'todo',notes,link:'',createdAt:now,completedAt:'',updatedAt:now}));
   const prevTasks=data.tasks;
   data.tasks=[...data.tasks,...newTasks];
   if(!save()){data.tasks=prevTasks;return;}
@@ -512,6 +542,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     if(link && !safeUrl(link)){showToast('Ссылка должна начинаться с https:// или http://');return}
     const status=$('taskStatus').value;
     const t={id:old?.id||makeId(),title,subjectId,type:$('taskType').value,due,time,priority:$('taskPriority').value,status,notes:$('taskNotes').value.trim(),link:safeUrl(link),createdAt:old?.createdAt||new Date().toISOString(),completedAt:status==='done'?(old?.completedAt||new Date().toISOString()):''};
+    t.updatedAt=new Date().toISOString();
     if(old){data.tasks=data.tasks.map(item=>item.id===id?t:item)}else data.tasks.push(t);
     save();$('taskDialog').close();render();showToast(old?'Задание обновлено':'Задание добавлено');
   }
@@ -528,7 +559,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     if(ui.subject===id){ui.subject='all';ui.view='tasks'}save();render();showToast('Предмет удалён');
   }
   function toggleTask(id){const t=data.tasks.find(t=>t.id===id);if(!t)return;
-    t.status=t.status==='done'?'todo':'done';t.completedAt=t.status==='done'?new Date().toISOString():'';save();render();showToast(t.status==='done'?'Отлично! Задание выполнено 🎉':'Задание возвращено в список');
+    t.status=t.status==='done'?'todo':'done';t.completedAt=t.status==='done'?new Date().toISOString():'';t.updatedAt=new Date().toISOString();save();render();showToast(t.status==='done'?'Отлично! Задание выполнено 🎉':'Задание возвращено в список');
   }
   function deleteTask(id){const t=data.tasks.find(t=>t.id===id);if(!t)return;if(!window.confirm(`Удалить задание «${t.title}»?`))return;data.tasks=data.tasks.filter(item=>item.id!==id);save();render();showToast('Задание удалено')}
   function downloadFile(filename,mime,content){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
@@ -586,6 +617,11 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       case 'calendar-next':ui.calendarMonth=new Date(ui.calendarMonth.getFullYear(),ui.calendarMonth.getMonth()+1,1);render();break;
       case 'calendar-today':ui.calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);ui.selectedDate=today();render();break;
       case 'select-day':ui.selectedDate=date;ui.calendarMonth=new Date(dateAtLocalMidnight(date).getFullYear(),dateAtLocalMidnight(date).getMonth(),1);render();break;
+      case 'sync-dialog':openSyncDialog();break;
+      case 'sync-close':$('syncDialog').close();break;
+      case 'sync-now':syncNow(true);break;
+      case 'sync-disconnect':disconnectSync();break;
+      case 'sync-recovery':downloadSyncRecovery();break;
       case 'backup':closeMenu();$('backupDialog').showModal();break;
       case 'close-backup':$('backupDialog').close();break;
       case 'export-json':exportJSON();break;
@@ -599,6 +635,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     if(preservedOldSubjects.length)showToast('Сохранены дополнительные предметы с заданиями: '+preservedOldSubjects.join(', ')+'. Перенеси задания вручную перед удалением.');
     document.addEventListener('click',onClick);
     $('taskForm').addEventListener('submit',saveTask);
+    $('syncPairForm').addEventListener('submit',connectSync);
     $('seriesForm').addEventListener('submit',saveSeries);
     $('seriesForm').addEventListener('input',updateSeriesPreview);
     $('seriesForm').addEventListener('change',updateSeriesPreview);
