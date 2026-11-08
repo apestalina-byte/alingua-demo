@@ -12,6 +12,13 @@ from psycopg.rows import dict_row
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 PAIRING_SECRET = os.environ.get("PAIRING_SECRET", "")
+ALLOWED_TELEGRAM_USER_ID = os.environ.get("STUDYBOARD_TELEGRAM_USER_ID", "").strip()
+
+
+def is_allowed_telegram_user(user_id: int) -> bool:
+    # Fail closed until the owner explicitly selects an allowed Telegram account.
+    return bool(ALLOWED_TELEGRAM_USER_ID.isdecimal() and int(ALLOWED_TELEGRAM_USER_ID) == user_id)
+
 
 
 def connection():
@@ -79,6 +86,8 @@ def init_db():
 
 
 def upsert_account(user_id: int, chat_id: int) -> int:
+    if not is_allowed_telegram_user(user_id):
+        raise PermissionError('Telegram account is not allowed')
     with connection() as conn:
         row = conn.execute(
             """INSERT INTO sb_accounts(telegram_user_id,chat_id) VALUES (%s,%s)
@@ -120,9 +129,10 @@ def account_for_token(token: str) -> int | None:
     if not token or len(token) > 200:
         return None
     with connection() as conn:
-        row=conn.execute("SELECT account_id FROM sb_devices WHERE token_hash=%s",
-                         (token_digest(token),)).fetchone()
-        return row["account_id"] if row else None
+        row=conn.execute("""SELECT d.account_id, a.telegram_user_id
+            FROM sb_devices d JOIN sb_accounts a ON a.id=d.account_id
+            WHERE d.token_hash=%s""",(token_digest(token),)).fetchone()
+        return row["account_id"] if row and is_allowed_telegram_user(row["telegram_user_id"]) else None
 
 
 def revoke_token(token: str):
@@ -256,9 +266,13 @@ def set_bot_offset(offset: int):
 
 
 def accounts_for_notifications():
+    if not ALLOWED_TELEGRAM_USER_ID.isdecimal():
+        return []
     with connection() as conn:
-        return conn.execute("""SELECT a.id,a.chat_id,s.payload FROM sb_accounts a
-            JOIN sb_snapshots s ON s.account_id=a.id WHERE a.notifications_enabled=TRUE""").fetchall()
+        return conn.execute("""SELECT a.id,a.telegram_user_id,a.chat_id,s.payload FROM sb_accounts a
+            JOIN sb_snapshots s ON s.account_id=a.id
+            WHERE a.notifications_enabled=TRUE AND a.telegram_user_id=%s""",
+            (int(ALLOWED_TELEGRAM_USER_ID),)).fetchall()
 
 
 def account_snapshot_for_telegram(user_id: int):
