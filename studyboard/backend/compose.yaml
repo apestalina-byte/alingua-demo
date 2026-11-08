@@ -31,7 +31,10 @@ services:
     ports: ["127.0.0.1:8765:8000"]
     depends_on:
       init: {condition: service_completed_successfully}
-    networks: [internal, edge]
+    networks:
+      internal: {}
+      edge:
+        aliases: [studyboard-api]
   bot:
     build: .
     restart: unless-stopped
@@ -52,4 +55,5 @@ volumes:
   studyboard_pgdata:
 networks:
   internal: {}
-  edge: {}
+  edge:
+    name: studyboard_edge
