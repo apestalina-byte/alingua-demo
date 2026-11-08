@@ -175,15 +175,25 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   const DATA_KEY = 'studyboard.data.v1';
   const THEME_KEY = 'studyboard.theme.v1';
   const COLORS = ['#7566ed','#4b9ed2','#2cb5a0','#f0ad5d','#ea7784','#ab75d5','#72a468','#d88f5b'];
+  const SUBJECT_CATALOG_MIGRATION_KEY = 'studyboard.catalog-10-subjects.2026-11';
+  const SUBJECT_CATALOG_BACKUP_KEY = 'studyboard.backup.before-catalog-update.2026-11';
   const DEFAULT_SUBJECTS = [
-    {id:'sub-db',name:'Проектирование баз данных',color:COLORS[0]},
-    {id:'sub-kis',name:'Корпоративные ИС',color:COLORS[1]},
-    {id:'sub-asp',name:'ASP.NET',color:COLORS[2]},
-    {id:'sub-prob',name:'Теория вероятностей',color:COLORS[3]},
-    {id:'sub-emi',name:'Эконометрика (ЭМИ)',color:COLORS[4]},
     {id:'sub-phys',name:'Физкультура',color:COLORS[5]},
-    {id:'sub-project',name:'Проектная деятельность',color:COLORS[6]}
+    {id:'sub-eng',name:'Английский язык',color:COLORS[1]},
+    {id:'sub-project',name:'Проектная деятельность',color:COLORS[6]},
+    {id:'sub-sim',name:'Имитационное моделирование бизнес процессов',color:COLORS[7]},
+    {id:'sub-analysis',name:'Анализ данных',color:COLORS[2]},
+    {id:'sub-emi',name:'Эконометрические методы исследования',color:COLORS[4]},
+    {id:'sub-kis',name:'КИС',color:COLORS[0]},
+    {id:'sub-diff',name:'Дифференциальные уравнения',color:COLORS[3]},
+    {id:'sub-prob',name:'Теория вероятностей',color:COLORS[7]},
+    {id:'sub-db',name:'Проектирование и разработка баз данных',color:COLORS[0]}
   ];
+  const SUBJECT_LEGACY_ALIASES = {
+    'sub-db':['Проектирование баз данных'],
+    'sub-kis':['Корпоративные ИС'],
+    'sub-emi':['Эконометрика (ЭМИ)']
+  };
   const TYPE_LABELS = {lab:'Лабораторная',homework:'Домашнее задание',test:'Контрольная / тест',project:'Проект',other:'Другое'};
   const STATUS_LABELS = {todo:'Не начато',progress:'В работе',done:'Выполнено'};
   const PRIORITY_LABELS = {normal:'Обычный',high:'Высокий',urgent:'Срочный'};
@@ -246,7 +256,62 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     })).filter(t=>{if(tids.has(t.id))return false;tids.add(t.id);return true});
     return {subjects,tasks};
   }
+
+  // Runs once for existing browsers. Keep the task records, IDs, and completion data intact.
+  // Only empty, no-longer-listed subjects are removed automatically.
+  function reconcileSubjectCatalog(source){
+    const oldSubjects=source.subjects;
+    const tasks=source.tasks.map(t=>({...t}));
+    const used=new Set();
+    const result=[];
+    const key=name=>String(name||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('ru-RU');
+    for(const desired of DEFAULT_SUBJECTS){
+      const aliases=new Set([desired.name,...(SUBJECT_LEGACY_ALIASES[desired.id]||[])].map(key));
+      const matches=oldSubjects.filter(s=>!used.has(s.id)&&(s.id===desired.id||aliases.has(key(s.name))));
+      const primary=matches.find(s=>s.id===desired.id)||matches[0];
+      if(!primary){
+        result.push({...desired});
+        continue;
+      }
+      result.push({...primary,name:desired.name});
+      for(const old of matches){
+        used.add(old.id);
+        if(old.id!==primary.id)for(const t of tasks)if(t.subjectId===old.id)t.subjectId=primary.id;
+      }
+    }
+    const preserved=[];
+    for(const old of oldSubjects){
+      if(used.has(old.id))continue;
+      if(tasks.some(t=>t.subjectId===old.id)){
+        preserved.push(old.name);
+        result.push({...old});
+      }
+    }
+    return {subjects:result,tasks,preserved};
+  }
+  function migrateSubjectCatalogIfNeeded(){
+    try{
+      if(localStorage.getItem(SUBJECT_CATALOG_MIGRATION_KEY)==='1')return [];
+      const updated=reconcileSubjectCatalog(data);
+      const current=JSON.stringify({version:1,subjects:data.subjects,tasks:data.tasks});
+      const next=JSON.stringify({version:1,subjects:updated.subjects,tasks:updated.tasks});
+      if(current!==next){
+        try{
+          if(!localStorage.getItem(SUBJECT_CATALOG_BACKUP_KEY))localStorage.setItem(SUBJECT_CATALOG_BACKUP_KEY,current);
+        }catch(error){console.warn('StudyBoard: не удалось создать дополнительную резервную копию',error);}
+        localStorage.setItem(DATA_KEY,next);
+        data={subjects:updated.subjects,tasks:updated.tasks};
+      }
+      localStorage.setItem(SUBJECT_CATALOG_MIGRATION_KEY,'1');
+      return updated.preserved;
+    }catch(error){
+      console.warn('StudyBoard: не удалось обновить список предметов',error);
+      return [];
+    }
+  }
+
   let data = loadData();
+  const preservedOldSubjects=migrateSubjectCatalogIfNeeded();
   const initialView = ['overview','tasks','calendar'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'overview';
   const ui = {view:initialView,subject:'all',filter:'all',sort:'due',search:'',calendarMonth:new Date(new Date().getFullYear(),new Date().getMonth(),1),selectedDate:today(),selectedColor:COLORS[0]};
   let toastTimer;
@@ -482,7 +547,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   async function importJSON(file){if(!file)return;
     try{
       if(file.size>8_000_000)throw new Error('Файл слишком большой');
-      const parsed=JSON.parse(await file.text());const imported=normalizeData(parsed);
+      const parsed=JSON.parse(await file.text());const normalized=normalizeData(parsed);const upgraded=reconcileSubjectCatalog(normalized);const imported={subjects:upgraded.subjects,tasks:upgraded.tasks};
       if(!window.confirm(`Восстановить данные из файла?\n\nПредметов: ${imported.subjects.length}\nЗаданий: ${imported.tasks.length}\n\nТекущие предметы и задания будут заменены. Перед этим рекомендуется скачать резервную копию.`))return;
       data=imported;save();ui.subject='all';ui.filter='all';ui.search='';$('backupDialog').close();navigate('overview');showToast('Данные восстановлены');
     }catch(e){showToast(`Не удалось импортировать файл: ${e.message||'неверный формат'}`)}finally{$('jsonImportInput').value=''}
@@ -525,6 +590,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   function init(){
     setTheme((()=>{try{return localStorage.getItem(THEME_KEY)==='dark'?'dark':'light'}catch{return 'light'}})());
     render();
+    if(preservedOldSubjects.length)showToast('Сохранены дополнительные предметы с заданиями: '+preservedOldSubjects.join(', ')+'. Перенеси задания вручную перед удалением.');
     document.addEventListener('click',onClick);
     $('taskForm').addEventListener('submit',saveTask);
     $('seriesForm').addEventListener('submit',saveSeries);
