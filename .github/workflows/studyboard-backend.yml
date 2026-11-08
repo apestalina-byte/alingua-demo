@@ -21,6 +21,11 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: python -m pip install -r studyboard/backend/requirements.txt
+      - name: Validate Docker Compose configuration
+        working-directory: studyboard/backend
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
       - name: Compile Python code
         run: python -m compileall -q studyboard/backend/studyboard_backend
       - name: Verify report and input validation logic
