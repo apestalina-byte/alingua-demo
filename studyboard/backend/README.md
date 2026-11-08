@@ -17,13 +17,26 @@ The static UI remains on GitHub Pages. This directory is an **optional, separate
 1. Register a bot via Telegram **@BotFather**; save the token privately.
 2. Use a separate HTTPS hostname for the StudyBoard API (for example, `study-api.example.com`) with DNS pointing to your VPS.
 3. Copy this directory to the VPS and run `cp .env.example .env`. Set TELEGRAM_BOT_TOKEN, a random PAIRING_SECRET (for example `openssl rand -hex 32`), a strong database password and matching DATABASE_URL password. Set CORS_ORIGINS to exactly `https://apestalina-byte.github.io`. Protect .env with `chmod 600 .env`.
-4. In the existing Caddy setup, add an isolated route:
+4. In the existing Caddy setup, add an isolated HTTPS hostname **without changing other sites**.
+
+   If **Caddy runs directly on the host**, use:
    ```caddyfile
    study-api.example.com {
        reverse_proxy 127.0.0.1:8765
    }
    ```
-   Ensure this doesn't interfere with any existing websites. Caddy will manage TLS. Do not open port 8765 publicly.
+
+   If **Caddy runs in another Docker container**, `127.0.0.1` would point inside that Caddy container and will not work. Start StudyBoard Compose, then attach the existing Caddy container to the dedicated application network once:
+   ```bash
+   docker network connect studyboard_edge <YOUR_CADDY_CONTAINER_NAME>
+   ```
+   Use this Caddy route instead:
+   ```caddyfile
+   study-api.example.com {
+       reverse_proxy studyboard-api:8000
+   }
+   ```
+   The API has an explicit network alias `studyboard-api`; database remains on StudyBoard's private internal network. Inspect your current Docker network setup before connecting containers. Caddy still manages TLS. Do not open port 8765 publicly.
 5. From this directory, `docker compose up -d --build`. Check `docker compose ps`, `docker compose logs --tail=100 api bot scheduler` and `curl -f https://study-api.example.com/health`.
 6. Open the existing StudyBoard GitHub Pages page, choose **Синхронизация**, enter the API URL and the code received by sending `/connect` in your bot. Confirm the initial migration.
 7. Repeat on the other device using a new code. Each device has its own revocable token.
