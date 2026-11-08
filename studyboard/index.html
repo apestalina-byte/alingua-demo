@@ -201,8 +201,9 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     </div>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./sync.js?v=1"></script>
   <script>
-/* StudyBoard: без внешних библиотек и серверов. */
+/* StudyBoard: local-first planner with optional cloud sync. */
 (() => {
   'use strict';
   const DATA_KEY = 'studyboard.data.v1';
@@ -629,6 +630,28 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       case 'export-ics':exportICS();break;
     }
   }
+
+  const cloudSync=window.StudyBoardSync.create({
+    getData:()=>data,
+    setData:snapshot=>{
+      const safe=normalizeData(snapshot);
+      localStorage.setItem(DATA_KEY,JSON.stringify({version:1,...safe}));
+      data=safe;
+      if(ui.subject!=='all'&&!getSubject(ui.subject))ui.subject='all';
+      render();
+    },
+    normalize:normalizeData,
+    showToast,
+    downloadFile,
+    today
+  });
+  function queueCloudSync(){cloudSync.queue()}
+  function openSyncDialog(){cloudSync.open()}
+  function connectSync(event){return cloudSync.connect(event)}
+  function syncNow(manual=false){return cloudSync.syncNow(manual)}
+  function disconnectSync(){return cloudSync.disconnect()}
+  function downloadSyncRecovery(){return cloudSync.downloadRecovery()}
+
   function init(){
     setTheme((()=>{try{return localStorage.getItem(THEME_KEY)==='dark'?'dark':'light'}catch{return 'light'}})());
     render();
@@ -636,6 +659,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     document.addEventListener('click',onClick);
     $('taskForm').addEventListener('submit',saveTask);
     $('syncPairForm').addEventListener('submit',connectSync);
+    cloudSync.init();
     $('seriesForm').addEventListener('submit',saveSeries);
     $('seriesForm').addEventListener('input',updateSeriesPreview);
     $('seriesForm').addEventListener('change',updateSeriesPreview);
