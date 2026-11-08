@@ -29,6 +29,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
 @media(max-width:430px){.page-heading{align-items:flex-start;flex-direction:column}.page-heading-actions{width:100%;justify-content:flex-start}.page-heading-actions .btn{flex:1;min-width:0}.series-presets{gap:6px}}
 
   </style>
+  <link rel="stylesheet" href="./design.css?v=2" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
 </head>
@@ -86,9 +87,8 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       </div>
       <nav class="subjects-nav" id="subjectsNav" aria-label="Предметы"></nav>
       <div class="sidebar-bottom">
-        <div class="sidebar-tip"><span class="tip-symbol"><svg class="icon"><use href="#i-sparkles"></use></svg></span><strong>Маленькие шаги — большой результат</strong><p>Записывай задания сразу и отмечай, что уже сделано.</p></div>
         <button type="button" class="bottom-link" data-action="backup"><svg class="icon"><use href="#i-download"></use></svg> Резервная копия</button>
-        <div class="sidebar-footnote">StudyBoard · версия 1.0</div>
+        <div class="sidebar-footnote">StudyBoard · 2.0<br>Данные сохраняются в этом браузере</div>
       </div>
     </aside>
 
@@ -96,7 +96,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       <header class="topbar">
         <div class="topbar-left">
           <button type="button" class="icon-btn menu-open" data-action="open-menu" aria-label="Открыть меню"><svg class="icon"><use href="#i-menu"></use></svg></button>
-          <div class="breadcrumb"><span>Мой семестр</span><svg class="icon"><use href="#i-chevron-right"></use></svg><strong id="breadcrumbCurrent">Обзор</strong></div>
+          <div class="breadcrumb"><span>Учебный план</span><svg class="icon"><use href="#i-chevron-right"></use></svg><strong id="breadcrumbCurrent">Обзор</strong></div>
         </div>
         <div class="topbar-actions">
           <span class="today-badge" id="todayBadge"></span>
@@ -107,6 +107,13 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
       <main id="appMain" class="main-content" tabindex="-1"></main>
     </div>
   </div>
+
+  <nav class="mobile-bottom-nav" aria-label="Быстрая навигация">
+    <button type="button" data-view="overview" aria-label="Обзор"><svg class="icon" aria-hidden="true"><use href="#i-grid"></use></svg><span>Обзор</span></button>
+    <button type="button" data-view="tasks" aria-label="Задания"><svg class="icon" aria-hidden="true"><use href="#i-list"></use></svg><span>Задания</span></button>
+    <button type="button" data-view="calendar" aria-label="Календарь"><svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg><span>Календарь</span></button>
+    <button type="button" data-action="new-task" aria-label="Создать задание"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg><span>Создать</span></button>
+  </nav>
 
   <dialog id="taskDialog" class="modal-dialog" aria-labelledby="taskDialogTitle">
     <form id="taskForm" class="modal-form">
@@ -321,7 +328,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
   function renderSidebar(){
     const total=data.tasks.filter(t=>t.status!=='done').length;
     $('navTaskCount').textContent=String(total);
-    document.querySelectorAll('.main-nav .nav-link').forEach(b=>{const active=b.dataset.view===ui.view&&ui.subject==='all';b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+    document.querySelectorAll('.main-nav .nav-link, .mobile-bottom-nav [data-view]').forEach(b=>{const active=b.dataset.view===ui.view&&ui.subject==='all';b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
     $('subjectsNav').innerHTML=data.subjects.map(s=>{
       const n=data.tasks.filter(t=>t.subjectId===s.id&&t.status!=='done').length;
       return `<div class="subject-link ${ui.subject===s.id?'active':''}" data-subject-row="${escapeHTML(s.id)}">
@@ -343,8 +350,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     const todayCount=open.filter(t=>t.due===today()).length;
     const overdue=open.filter(isOverdue).length;
     const done=countDone(data.tasks);
-    const greeting = new Date().getHours()<12?'Доброе утро':new Date().getHours()<18?'Добрый день':'Добрый вечер';
-    return `<section class="hero"><div class="hero-copy"><div class="hero-topline">${icon('sparkles')} ТВОЙ УЧЕБНЫЙ ПЛАН</div><h1>${greeting}! 👋</h1><p>Все задания, лабораторные и дедлайны собраны в одном месте. Самое время закрыть ещё одну задачу.</p></div><div class="hero-graphic" aria-hidden="true"><div class="graphic-sheet graphic-back"></div><div class="graphic-sheet graphic-front"><div class="graphic-line"></div><div class="graphic-line short"></div><div class="graphic-check"></div><div class="graphic-check"></div></div></div></section>
+    return `<section class="overview-intro"><div><span class="eyebrow">ОБЗОР СЕМЕСТРА</span><h1>Учебный план</h1><p>Заданий в работе: ${open.length}. Предметов: ${data.subjects.length}. Сроки и прогресс — в одном месте.</p></div><div class="overview-header-actions"><button type="button" class="btn btn-outline" data-action="new-series">${icon('list')} Серия заданий</button><button type="button" class="btn btn-primary" data-action="new-task">${icon('plus')} Новое задание</button></div></section>
     <section class="stats-grid" aria-label="Статистика">
       ${statCard('Всего заданий',data.tasks.length,'По всем предметам','list','purple')}
       ${statCard('На сегодня',todayCount,'Задания со сроком сегодня','clock','amber')}
@@ -354,7 +360,7 @@ body[data-theme="dark"]{color-scheme:dark;--bg:#101422;--panel:#1a2032;--panel-s
     <section class="overview-grid"><div class="panel"><div class="panel-heading"><div><h2>Ближайшие дедлайны</h2><p>Сначала самые срочные задания</p></div><button class="text-action" type="button" data-action="show-tasks">Все задания ${icon('chevron-right')}</button></div>
       ${upcoming.length?`<div class="upcoming-list">${upcoming.map(t=>`<div class="upcoming-item">${taskCheck(t)}<div class="upcoming-body"><span class="upcoming-title" title="${escapeHTML(t.title)}">${escapeHTML(t.title)}</span><div class="upcoming-meta"><span class="meta-dot" style="background:${getSubject(t.subjectId)?.color||COLORS[0]}"></span>${escapeHTML(getSubjectName(t.subjectId))}${t.time?' · '+escapeHTML(t.time):''}</div></div>${duePill(t)}</div>`).join('')}</div>`:emptyState('calendar','Здесь появятся дедлайны','Добавь задание и укажи дату сдачи, чтобы видеть самое важное прямо на главной.',true)}
     </div><div class="panel progress-panel"><div class="panel-heading"><div><h2>Твой прогресс</h2><p>Выполнение по дисциплинам</p></div>${icon('target')}</div><div class="progress-overall"><div class="progress-row"><span>Общий прогресс</span><strong>${percentDone(data.tasks)}%</strong></div><div class="progress-bar"><div style="width:${percentDone(data.tasks)}%"></div></div></div><div class="progress-subjects">${data.subjects.map(progressSubject).join('')||'<span class="muted">Нет предметов</span>'}</div></div></section>
-    <section class="subject-section"><div class="section-heading"><h2>Мои предметы</h2><button type="button" class="text-action" data-action="new-subject">${icon('plus')} Добавить предмет</button></div><div class="subject-cards">${data.subjects.map(s=>{const tasks=data.tasks.filter(t=>t.subjectId===s.id);return `<button type="button" class="subject-card" data-action="select-subject" data-id="${escapeHTML(s.id)}"><div class="subject-card-top"><span class="subject-card-icon" style="background:${s.color}20;color:${s.color}">${icon('book')}</span>${icon('arrow-up-right')}</div><strong title="${escapeHTML(s.name)}">${escapeHTML(s.name)}</strong><small>${tasks.length} заданий · ${percentDone(tasks)}% готово</small></button>`}).join('')||emptyState('book','Пока нет предметов','Создай свой первый предмет, чтобы добавить задания.',false)}</div></section>`;
+    <section class="subject-section"><div class="section-heading"><h2>Мои предметы</h2><button type="button" class="text-action" data-action="new-subject">${icon('plus')} Добавить предмет</button></div><div class="subject-cards">${data.subjects.map(s=>{const tasks=data.tasks.filter(t=>t.subjectId===s.id);return `<button type="button" class="subject-card" data-action="select-subject" data-id="${escapeHTML(s.id)}"><div class="subject-card-top"><span class="subject-card-icon" style="background:${s.color}20;color:${s.color}">${icon('book')}</span>${icon('arrow-up-right')}</div><strong title="${escapeHTML(s.name)}">${escapeHTML(s.name)}</strong><div class="subject-card-bottom"><small>${tasks.length} заданий</small><strong>${percentDone(tasks)}%</strong></div><div class="subject-mini-progress" aria-hidden="true"><span style="width:${percentDone(tasks)}%;background:${s.color}"></span></div></button>`}).join('')||emptyState('book','Пока нет предметов','Создай свой первый предмет, чтобы добавить задания.',false)}</div></section>`;
   }
   function emptyState(ico,title,description,add){return `<div class="empty-state"><span class="empty-icon">${icon(ico)}</span><h3>${title}</h3><p>${description}</p>${add?`<button type="button" class="btn btn-primary" data-action="new-task">${icon('plus')} Добавить задание</button>`:''}</div>`}
   function dateTag(t){if(!t.due) return '';const overdue=isOverdue(t),isToday=t.due===today();return `<span class="tag ${overdue?'due-overdue':isToday&&t.status!=='done'?'due-today':''}">${icon('calendar')}${formatDate(t.due,{day:'numeric',month:'short',year:'numeric'})}${t.time?' · '+escapeHTML(t.time):''}${overdue?' · просрочено':''}</span>`}
