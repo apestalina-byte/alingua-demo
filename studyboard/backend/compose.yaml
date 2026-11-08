@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: studyboard
+      POSTGRES_USER: studyboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - studyboard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyboard -d studyboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    networks: [internal]
+  init:
+    build: .
+    env_file: .env
+    command: python -m studyboard_backend.migrate
+    depends_on:
+      db: {condition: service_healthy}
+    restart: "no"
+    networks: [internal]
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: uvicorn studyboard_backend.api:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips "*"
+    ports: ["127.0.0.1:8765:8000"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+    networks: [internal, edge]
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: python -m studyboard_backend.bot
+    depends_on:
+      init: {condition: service_completed_successfully}
+    networks: [internal]
+  scheduler:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: python -m studyboard_backend.scheduler
+    depends_on:
+      init: {condition: service_completed_successfully}
+    networks: [internal]
+volumes:
+  studyboard_pgdata:
+networks:
+  internal: {}
+  edge: {}
